@@ -12,7 +12,7 @@ from peewee import (
     ModelSelect,
     ModelDelete,
     chunked,
-    fn
+    fn,
 )
 from playhouse.shortcuts import ReconnectMixin
 
@@ -23,34 +23,36 @@ from vnpy.trader.database import (
     BarOverview,
     TickOverview,
     DB_TZ,
-    convert_tz
+    convert_tz,
 )
 from vnpy.trader.setting import SETTINGS
 
 
 class ReconnectMySQLDatabase(ReconnectMixin, PeeweeMySQLDatabase):
-    """带有重连混入的MySQL数据库类"""
+    """MySQL Database Classes with Reconnection Blending"""
+
     pass
+
 
 db = ReconnectMySQLDatabase(
     database=SETTINGS["database.database"],
     user=SETTINGS["database.user"],
     password=SETTINGS["database.password"],
     host=SETTINGS["database.host"],
-    port=SETTINGS["database.port"]
+    port=SETTINGS["database.port"],
 )
 
 
 class DateTimeMillisecondField(DateTimeField):
-    """支持毫秒的日期时间戳字段"""
+    """Support for milliseconds date timestamp field"""
 
     def get_modifiers(self):
-        """毫秒支持"""
+        """Milliseconds support"""
         return [3]
 
 
 class DbBarData(Model):
-    """K线数据表映射对象"""
+    """K-Line Data Table Mapping Objects"""
 
     id: AutoField = AutoField()
 
@@ -73,7 +75,7 @@ class DbBarData(Model):
 
 
 class DbTickData(Model):
-    """TICK数据表映射对象"""
+    """TICK data table mapping object"""
 
     id: AutoField = AutoField()
 
@@ -127,7 +129,7 @@ class DbTickData(Model):
 
 
 class DbBarOverview(Model):
-    """K线汇总数据表映射对象"""
+    """K-Line Summary Data Table Mapping Objects"""
 
     id: AutoField = AutoField()
 
@@ -144,7 +146,7 @@ class DbBarOverview(Model):
 
 
 class DbTickOverview(Model):
-    """Tick汇总数据表映射对象"""
+    """Tick Summary Data Table Mapping Objects"""
 
     id: AutoField = AutoField()
 
@@ -160,7 +162,7 @@ class DbTickOverview(Model):
 
 
 class MysqlDatabase(BaseDatabase):
-    """Mysql数据库接口"""
+    """Mysql Database Interface"""
 
     def __init__(self) -> None:
         """"""
@@ -169,14 +171,14 @@ class MysqlDatabase(BaseDatabase):
         self.db.create_tables([DbBarData, DbTickData, DbBarOverview, DbTickOverview])
 
     def save_bar_data(self, bars: List[BarData], stream: bool = False) -> bool:
-        """保存K线数据"""
-        # 读取主键参数
+        """Save K-Line Data"""
+        # Read the primary key parameters
         bar: BarData = bars[0]
         symbol: str = bar.symbol
         exchange: Exchange = bar.exchange
         interval: Interval = bar.interval
 
-        # 将BarData数据转换为字典，并调整时区
+        # Converting BarData data to a dictionary and adjusting the time zone
         data: list = []
 
         for bar in bars:
@@ -189,12 +191,12 @@ class MysqlDatabase(BaseDatabase):
             d.pop("vt_symbol")
             data.append(d)
 
-        # 使用upsert操作将数据更新到数据库中
+        # Updating data into the database using the upsert operation
         with self.db.atomic():
             for c in chunked(data, 50):
                 DbBarData.insert_many(c).on_conflict_replace().execute()
 
-        # 更新K线汇总数据
+        # Updated K-line summary data
         overview: DbBarOverview = DbBarOverview.get_or_none(
             DbBarOverview.symbol == symbol,
             DbBarOverview.exchange == exchange.value,
@@ -228,13 +230,13 @@ class MysqlDatabase(BaseDatabase):
         return True
 
     def save_tick_data(self, ticks: List[TickData], stream: bool = False) -> bool:
-        """保存TICK数据"""
-        # 读取主键参数
+        """Save TICK data"""
+        # Retrieve primary key parameters
         tick: TickData = ticks[0]
         symbol: str = tick.symbol
         exchange: Exchange = tick.exchange
 
-        # 将TickData数据转换为字典，并调整时区
+        # Converting TickData data to a dictionary and adjusting the time zone
         data: list = []
 
         for tick in ticks:
@@ -246,12 +248,12 @@ class MysqlDatabase(BaseDatabase):
             d.pop("vt_symbol")
             data.append(d)
 
-        # 使用upsert操作将数据更新到数据库中
+        # Updating data into the database using the upsert operation
         with self.db.atomic():
             for c in chunked(data, 50):
                 DbTickData.insert_many(c).on_conflict_replace().execute()
 
-        # 更新Tick汇总数据
+        # Update Tick summary data
         overview: DbTickOverview = DbTickOverview.get_or_none(
             DbTickOverview.symbol == symbol,
             DbTickOverview.exchange == exchange.value,
@@ -272,8 +274,7 @@ class MysqlDatabase(BaseDatabase):
             overview.end = max(ticks[-1].datetime, overview.end)
 
             s: ModelSelect = DbTickData.select().where(
-                (DbTickData.symbol == symbol)
-                & (DbTickData.exchange == exchange.value)
+                (DbTickData.symbol == symbol) & (DbTickData.exchange == exchange.value)
             )
             overview.count = s.count()
 
@@ -287,17 +288,19 @@ class MysqlDatabase(BaseDatabase):
         exchange: Exchange,
         interval: Interval,
         start: datetime,
-        end: datetime
+        end: datetime,
     ) -> List[BarData]:
         """"""
         s: ModelSelect = (
-            DbBarData.select().where(
+            DbBarData.select()
+            .where(
                 (DbBarData.symbol == symbol)
                 & (DbBarData.exchange == exchange.value)
                 & (DbBarData.interval == interval.value)
                 & (DbBarData.datetime >= start)
                 & (DbBarData.datetime <= end)
-            ).order_by(DbBarData.datetime)
+            )
+            .order_by(DbBarData.datetime)
         )
 
         bars: List[BarData] = []
@@ -314,27 +317,25 @@ class MysqlDatabase(BaseDatabase):
                 high_price=db_bar.high_price,
                 low_price=db_bar.low_price,
                 close_price=db_bar.close_price,
-                gateway_name="DB"
+                gateway_name="DB",
             )
             bars.append(bar)
 
         return bars
 
     def load_tick_data(
-        self,
-        symbol: str,
-        exchange: Exchange,
-        start: datetime,
-        end: datetime
+        self, symbol: str, exchange: Exchange, start: datetime, end: datetime
     ) -> List[TickData]:
-        """读取TICK数据"""
+        """Read TICK data"""
         s: ModelSelect = (
-            DbTickData.select().where(
+            DbTickData.select()
+            .where(
                 (DbTickData.symbol == symbol)
                 & (DbTickData.exchange == exchange.value)
                 & (DbTickData.datetime >= start)
                 & (DbTickData.datetime <= end)
-            ).order_by(DbTickData.datetime)
+            )
+            .order_by(DbTickData.datetime)
         )
 
         ticks: List[TickData] = []
@@ -376,19 +377,16 @@ class MysqlDatabase(BaseDatabase):
                 ask_volume_4=db_tick.ask_volume_4,
                 ask_volume_5=db_tick.ask_volume_5,
                 localtime=db_tick.localtime,
-                gateway_name="DB"
+                gateway_name="DB",
             )
             ticks.append(tick)
 
         return ticks
 
     def delete_bar_data(
-        self,
-        symbol: str,
-        exchange: Exchange,
-        interval: Interval
+        self, symbol: str, exchange: Exchange, interval: Interval
     ) -> int:
-        """删除K线数据"""
+        """Delete K-line data"""
         d: ModelDelete = DbBarData.delete().where(
             (DbBarData.symbol == symbol)
             & (DbBarData.exchange == exchange.value)
@@ -396,7 +394,7 @@ class MysqlDatabase(BaseDatabase):
         )
         count: int = d.execute()
 
-        # 删除K线汇总数据
+        # Delete K-line summary data
         d2: ModelDelete = DbBarOverview.delete().where(
             (DbBarOverview.symbol == symbol)
             & (DbBarOverview.exchange == exchange.value)
@@ -405,20 +403,15 @@ class MysqlDatabase(BaseDatabase):
         d2.execute()
         return count
 
-    def delete_tick_data(
-        self,
-        symbol: str,
-        exchange: Exchange
-    ) -> int:
-        """删除TICK数据"""
+    def delete_tick_data(self, symbol: str, exchange: Exchange) -> int:
+        """Delete TICK data"""
         d: ModelDelete = DbTickData.delete().where(
-            (DbTickData.symbol == symbol)
-            & (DbTickData.exchange == exchange.value)
+            (DbTickData.symbol == symbol) & (DbTickData.exchange == exchange.value)
         )
 
         count: int = d.execute()
 
-        # 删除Tick汇总数据
+        # Delete Tick Summary Data
         d2: ModelDelete = DbTickOverview.delete().where(
             (DbTickOverview.symbol == symbol)
             & (DbTickOverview.exchange == exchange.value)
@@ -427,8 +420,8 @@ class MysqlDatabase(BaseDatabase):
         return count
 
     def get_bar_overview(self) -> List[BarOverview]:
-        """查询数据库中的K线汇总信息"""
-        # 如果已有K线，但缺失汇总信息，则执行初始化
+        """Query the K-line summary information in the database"""
+        # If there is already a K-line, but summary information is missing, perform initialization
         data_count: int = DbBarData.select().count()
         overview_count: int = DbBarOverview.select().count()
         if data_count and not overview_count:
@@ -443,7 +436,7 @@ class MysqlDatabase(BaseDatabase):
         return overviews
 
     def get_tick_overview(self) -> List[TickOverview]:
-        """查询数据库中的Tick汇总信息"""
+        """Query the database for Tick summary information"""
         s: ModelSelect = DbTickOverview.select()
         overviews: list = []
         for overview in s:
@@ -452,19 +445,13 @@ class MysqlDatabase(BaseDatabase):
         return overviews
 
     def init_bar_overview(self) -> None:
-        """初始化数据库中的K线汇总信息"""
-        s: ModelSelect = (
-            DbBarData.select(
-                DbBarData.symbol,
-                DbBarData.exchange,
-                DbBarData.interval,
-                fn.COUNT(DbBarData.id).alias("count")
-            ).group_by(
-                DbBarData.symbol,
-                DbBarData.exchange,
-                DbBarData.interval
-            )
-        )
+        """Initialize the K-line summary information in the database"""
+        s: ModelSelect = DbBarData.select(
+            DbBarData.symbol,
+            DbBarData.exchange,
+            DbBarData.interval,
+            fn.COUNT(DbBarData.id).alias("count"),
+        ).group_by(DbBarData.symbol, DbBarData.exchange, DbBarData.interval)
 
         for data in s:
             overview: DbBarOverview = DbBarOverview()

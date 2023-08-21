@@ -1,14 +1,14 @@
-# 1.0.4版本
+# Version 1.0.4
 
-1. 添加数据库连接的自动重连功能
-2. 修复由于Float类型溢出导致的数据异常问题
+1. Add automatic reconnect function for database connection.
+2. Fix the data anomaly problem caused by Float type overflow.
 
-# 1.0.3版本
+# 1.0.3 Version
 
-1. 修复加载数据时的时段重复问题
+1. Fix duplicate time period problem when loading data
 
-# 1.0.2版本
+# 1.0.2 version
 
-1. 增加Tick数据汇总支持
-2. 数据时间戳字段支持毫秒
-3. 增加写入数据时的流式参数支持
+1. Add Tick data summary support
+2. Add milliseconds support for data timestamp field. 3.
+3. Add support for streaming parameters when writing data

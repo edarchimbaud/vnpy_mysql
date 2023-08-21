@@ -1,4 +1,4 @@
-# VeighNa框架的MySQL数据库接口
+# MySQL Database Interface for VeighNa Framework
 
 <p align="center">
   <img src ="https://vnpy.oss-cn-shanghai.aliyuncs.com/vnpy-logo.png"/>
@@ -10,43 +10,43 @@
     <img src ="https://img.shields.io/badge/python-3.7|3.8|3.9|3.10-blue.svg" />
 </p>
 
-## 说明
+## Description
 
-基于peewee开发的MySQL数据库接口。
+MySQL database interface based on peewee development.
 
-## 使用
+## Use
 
-### 全局配置
+### Global Configuration
 
-在VeighNa中使用MySQL时，需要在全局配置中填写以下字段信息：
+When using MySQL in VeighNa, you need to fill in the following field information in the global configuration:
 
-|名称|含义|必填|举例|
+|name|meaning|required|example|
 |---------|----|---|---|
-|database.name|名称|是|mysql|
-|database.host|地址|是|localhost|
-|database.port|端口|是|3306|
-|database.database|实例|是|vnpy|
-|database.user|用户名|是|root|
-|database.password|密码|是|123456|
+|database.name|Name|Yes|mysql|
+|database.host|Address|Yes|localhost
+|database.port|Port|Yes|3306
+|database.database|Instance|Yes|vnpy
+|database.user|Username|Yes|root
+|database.password|Password|Yes|123456
 
-### 创建实例（Schema)
+### Create instance (Schema)
 
-VeighNa不会主动为MySQL数据库创建实例，所以使用前请确保database.database字段中填写的的数据库实例已经创建了。
+VeighNa does not actively create instances of MySQL databases, so please make sure that the instance of the database filled in the database.database field has been created before using it.
 
-若实例尚未创建，可以使用【MySQL Workbench】客户端的【new_schema】进行操作。
+If the instance has not been created, you can use [new_schema] in the MySQL Workbench client.
 
 
-### 字符串大小写敏感支持
+### String case-sensitivity support
 
-由于peewee的建表功能限制，默认情况下在保存合约代码的【symbol】字段时，无法区分字符串大小写。如果影响使用，可按照以下方式手动修改MySQL数据表来解决：
+Due to the limitation of peewee's table building function, by default, the [symbol] field of the contract code is not case-sensitive when it is saved. If it affects the usage, you can fix it by manually modifying the MySQL data table as follows:
 
-```
-# 用MySQL命令行工具连接数据库
+```sql
+# Connect to the database with the MySQL command line tool
 
-# 选择数据实例
+# Select the data instance
 use vnpy;
 
-# 修改四张表symbol字段的BINARY属性
+# Modify the BINARY attribute of the SYMBOL field of the four tables
 ALTER TABLE `dbbaroverview` MODIFY COLUMN `symbol` VARCHAR(45) BINARY;
 
 ALTER TABLE `dbtickoverview` MODIFY COLUMN `symbol` VARCHAR(45) BINARY;
